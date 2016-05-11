@@ -24,10 +24,12 @@ private:
   void handleStatusGet();
   void handleChangeGet();
   void handleChangePost();
+  void handleScanAndChangeGet();
   
   String renderWiFiOptions();
   String renderChangeView();
   String renderStatusView();
+  String renderScanAndChangeView();
 };
 
 }

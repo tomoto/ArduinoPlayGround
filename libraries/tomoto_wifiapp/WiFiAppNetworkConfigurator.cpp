@@ -34,7 +34,7 @@ void WiFiAppNetworkConfigurator::validateSwitchWiFiPayload(const SwitchWiFiPaylo
   }
 }
 
-void WiFiAppNetworkConfigurator::scanAccessPoints(TinyVector<WiFiAccessPointInfo>* outAccessPoints)
+void WiFiAppNetworkConfigurator::scanAccessPoints()
 {
   // save current SSID and password
   // because scanning networks may clear them out
@@ -42,9 +42,9 @@ void WiFiAppNetworkConfigurator::scanAccessPoints(TinyVector<WiFiAccessPointInfo
   String savedPSK = WiFi.psk();
   
   int8_t numberOfAccessPoints = WiFi.scanNetworks();
-  outAccessPoints->resize(numberOfAccessPoints);
+  m_scannedAccessPoints.resize(numberOfAccessPoints);
   for (int i = 0; i < numberOfAccessPoints; i++) {
-    WiFiAccessPointInfo* p = outAccessPoints->begin() + i;
+    WiFiAccessPointInfo* p = m_scannedAccessPoints.begin() + i;
     WiFi.getNetworkInfo(i, p->ssid, p->encryptionType, p->rssi, p->bssid, p->ch, p->isHidden);
   }
   

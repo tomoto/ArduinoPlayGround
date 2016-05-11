@@ -9,6 +9,9 @@ namespace tomoto {
 
 class WiFiAppNetworkConfigurator
 {
+private:
+  TinyVector<WiFiAccessPointInfo> m_scannedAccessPoints;
+
 public:
   struct SwitchWiFiPayload {
     String ssid;
@@ -18,7 +21,8 @@ public:
   void switchWiFi(const SwitchWiFiPayload& payload, ErrorInfo& ex);
   void validateSwitchWiFiPayload(const SwitchWiFiPayload& payload, ErrorInfo& ex);
   
-  void scanAccessPoints(TinyVector<WiFiAccessPointInfo>* outAccessPoints);
+  void scanAccessPoints();
+  const TinyVector<WiFiAccessPointInfo>& getScannedAccessPoints() const { return m_scannedAccessPoints; }
 };
 
 }

@@ -9,6 +9,7 @@
 #define URL_BASE "/config/network"
 #define URL_STATUS URL_BASE
 #define URL_CHANGE URL_BASE "/change"
+#define URL_SCAN_AND_CHANGE URL_BASE "/scanAndChange"
 #define HANDLE_FUNC(F) std::bind(&WiFiAppNetworkConfiguratorView::F, this)
 
 using namespace tomoto;
@@ -21,16 +22,16 @@ void WiFiAppNetworkConfiguratorView::init(ESP8266WebServer* webServer, WiFiAppNe
   ws()->on(URL_STATUS, HTTP_GET, HANDLE_FUNC(handleStatusGet));
   ws()->on(URL_CHANGE, HTTP_GET,  HANDLE_FUNC(handleChangeGet));
   ws()->on(URL_CHANGE, HTTP_POST, HANDLE_FUNC(handleChangePost));
+  ws()->on(URL_SCAN_AND_CHANGE, HTTP_GET, HANDLE_FUNC(handleScanAndChangeGet));
 }
 
 String WiFiAppNetworkConfiguratorView::renderWiFiOptions()
 {
   String result;
   
-  TinyVector<WiFiAccessPointInfo> accessPoints;
-  m_configurator->scanAccessPoints(&accessPoints);
+  const TinyVector<WiFiAccessPointInfo> &accessPoints = m_configurator->getScannedAccessPoints();
   
-  for (WiFiAccessPointInfo* p = accessPoints.begin(); p != accessPoints.end(); p++) {
+  for (const WiFiAccessPointInfo* p = accessPoints.begin(); p != accessPoints.end(); p++) {
     result = result + "<option value='" + p->ssid + "'>" + p->ssid + "</option>";
   }
   
@@ -67,7 +68,7 @@ String WiFiAppNetworkConfiguratorView::renderStatusView()
       "WiFi Station Information" +
       "<ul>" +
        "<li>Status: " + WiFiStatusUtil::toString(WiFi.status()) +
-       "<li>SSID: " + WiFi.SSID() + " <a href='" + URL_CHANGE + "'>Change</a>" +
+       "<li>SSID: " + WiFi.SSID() + " <a href='" + URL_SCAN_AND_CHANGE + "'>Change</a>" +
        "<li>IP address: " + IPAddressUtil::toString(WiFi.localIP()) +
        "<li>Subnet mask: " + IPAddressUtil::toString(WiFi.subnetMask()) +
        "<li>Default gateway: " + IPAddressUtil::toString(WiFi.gatewayIP()) +
@@ -80,6 +81,19 @@ String WiFiAppNetworkConfiguratorView::renderStatusView()
        "<li>AP MAC address: " + WiFi.softAPmacAddress() +
       "</ul>" +
      "</body>" +
+    "</html>";
+}
+
+String WiFiAppNetworkConfiguratorView::renderScanAndChangeView()
+{
+  return String() +
+    "<html>" +
+      "<head>" +
+        "<meta http-equiv='refresh' content='3;url=" + URL_CHANGE + "'/>" +
+      "</head>" +
+      "<body>" +
+        "Scanning the network..." +
+      "</body>" +
     "</html>";
 }
 
@@ -111,4 +125,10 @@ void WiFiAppNetworkConfiguratorView::handleChangePost()
   } else {
     ws()->send(400, "text/plain", ex.message());
   }
+}
+
+void WiFiAppNetworkConfiguratorView::handleScanAndChangeGet()
+{
+  ws()->send(200, "text/html", renderScanAndChangeView());
+  m_configurator->scanAccessPoints();
 }
