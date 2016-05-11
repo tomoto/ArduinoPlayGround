@@ -6,9 +6,9 @@
 namespace tomoto {
 
 struct WiFiAppDeepSleepConfig {
-  static const unsigned long DEFAULT_INITIAL_TIMEOUT_MILLIS = 15000;
+  static const unsigned long DEFAULT_INITIAL_TIMEOUT_MILLIS = 40000;
   static const unsigned long DEFAULT_IN_PROCESS_TIMEOUT_MILLIS = 120000;
-  static const unsigned long DEFAULT_DEEP_SLEEP_MILLIS = 90000;
+  static const unsigned long DEFAULT_DEEP_SLEEP_MILLIS = 120000;
   
   unsigned long initialTimeoutMillis;
   unsigned long inProcessTimeoutMillis;
