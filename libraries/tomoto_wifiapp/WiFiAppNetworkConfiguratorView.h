@@ -21,15 +21,18 @@ public:
 private:
   ESP8266WebServer* ws() { return m_webServer; }
   
-  void handleStatusGet();
+  void handleStatus();
   void handleChangeGet();
   void handleChangePost();
-  void handleScanAndChangeGet();
+  void handleScanAndChange();
+  void handleReconnect();
+  void handleDisconnect();
   
   String renderWiFiOptions();
   String renderChangeView();
   String renderStatusView();
   String renderScanAndChangeView();
+  String renderWaitForStatusView();
 };
 
 }

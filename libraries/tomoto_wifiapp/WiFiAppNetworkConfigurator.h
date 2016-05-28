@@ -19,10 +19,14 @@ public:
   };
   
   void switchWiFi(const SwitchWiFiPayload& payload, ErrorInfo& ex);
-  void validateSwitchWiFiPayload(const SwitchWiFiPayload& payload, ErrorInfo& ex);
+  void validateSwitchWiFiPayload(const SwitchWiFiPayload& payload, ErrorInfo& ex) const;
   
   void scanAccessPoints();
   const TinyVector<WiFiAccessPointInfo>& getScannedAccessPoints() const { return m_scannedAccessPoints; }
+  
+  bool isConnecting() const;
+  void reconnect();
+  void disconnect();
 };
 
 }

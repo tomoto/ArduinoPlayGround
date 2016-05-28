@@ -1,6 +1,7 @@
 #include <WiFiAppNetworkConfigurator.h>
 #include <ESP8266WiFi.h>
 #include <HardwareSerial.h>
+#include <WiFiStationConfiguration.h>
 
 using namespace tomoto;
 
@@ -13,13 +14,15 @@ void WiFiAppNetworkConfigurator::switchWiFi(const SwitchWiFiPayload& payload, Er
   const String& password = payload.password;
   
   WiFi.disconnect();
+  WiFi.persistent(true);
   WiFi.begin(ssid.c_str(), password.c_str());
+  WiFi.persistent(false);
   
   Serial.print("WiFi Switching. SSID=");
   Serial.println(ssid);
 }
 
-void WiFiAppNetworkConfigurator::validateSwitchWiFiPayload(const SwitchWiFiPayload& payload, ErrorInfo& ex)
+void WiFiAppNetworkConfigurator::validateSwitchWiFiPayload(const SwitchWiFiPayload& payload, ErrorInfo& ex) const
 {
   const String& ssid = payload.ssid;
   if (ssid.length() == 0 || ssid.length() > 32) {
@@ -36,20 +39,27 @@ void WiFiAppNetworkConfigurator::validateSwitchWiFiPayload(const SwitchWiFiPaylo
 
 void WiFiAppNetworkConfigurator::scanAccessPoints()
 {
-  // save current SSID and password
-  // because scanning networks may clear them out
-  String savedSSID = WiFi.SSID();
-  String savedPSK = WiFi.psk();
-  
   int8_t numberOfAccessPoints = WiFi.scanNetworks();
   m_scannedAccessPoints.resize(numberOfAccessPoints);
   for (int i = 0; i < numberOfAccessPoints; i++) {
     WiFiAccessPointInfo* p = m_scannedAccessPoints.begin() + i;
     WiFi.getNetworkInfo(i, p->ssid, p->encryptionType, p->rssi, p->bssid, p->ch, p->isHidden);
   }
-  
-  // restore current SSID and password
-  if (savedSSID.length() > 0) {
-    WiFi.begin(savedSSID.c_str(), savedPSK.c_str());
-  }
 }
+
+bool WiFiAppNetworkConfigurator::isConnecting() const
+{
+  return WiFi.SSID().length() > 0;
+}
+
+void WiFiAppNetworkConfigurator::reconnect()
+{
+  WiFiStationConfiguration config(true);
+  WiFi.begin(config.ssid(), config.password());
+}
+
+void WiFiAppNetworkConfigurator::disconnect()
+{
+  WiFi.disconnect();
+}
+

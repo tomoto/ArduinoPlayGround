@@ -25,6 +25,7 @@ void WiFiApp::init()
   
   wifi_set_sleep_type(LIGHT_SLEEP_T);
   WiFi.mode(WIFI_OFF);
+  WiFi.persistent(false);
   
   Serial.begin(COMM_SPEED);
   Serial.println();
@@ -36,13 +37,14 @@ void WiFiApp::begin(const char* hostName, const char* apSSID, const char* apPass
 {
   m_hostName = hostName;
   
-  m_station.begin(m_hostName.c_str());
+  m_station.begin(hostName);
   
   waitForEnableAccessPoint();
   
   if (m_isAPEnabled) {
     IPAddress apSubnetMask = IPAddress(255, 255, 255, 0);
-    m_accessPoint.begin(apSSID, apPassword, apIP, apSubnetMask, m_hostName.c_str());
+    m_accessPoint.begin(apSSID, apPassword, apIP, apSubnetMask, hostName);
+    WiFi.disconnect();
   }
   
   waitForNetworkOrDeepSleep(

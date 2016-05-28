@@ -5,11 +5,14 @@
 #include <ESP8266WebServer.h>
 #include <IPAddressUtil.h>
 #include <WiFiStatusUtil.h>
+#include <WiFiStationConfiguration.h>
 
 #define URL_BASE "/config/network"
 #define URL_STATUS URL_BASE
 #define URL_CHANGE URL_BASE "/change"
 #define URL_SCAN_AND_CHANGE URL_BASE "/scanAndChange"
+#define URL_RECONNECT URL_BASE "/reconnect"
+#define URL_DISCONNECT URL_BASE "/disconnect"
 #define HANDLE_FUNC(F) std::bind(&WiFiAppNetworkConfiguratorView::F, this)
 
 using namespace tomoto;
@@ -19,10 +22,12 @@ void WiFiAppNetworkConfiguratorView::init(ESP8266WebServer* webServer, WiFiAppNe
   m_webServer = webServer;
   m_configurator = configurator;
   
-  ws()->on(URL_STATUS, HTTP_GET, HANDLE_FUNC(handleStatusGet));
+  ws()->on(URL_STATUS, HTTP_GET, HANDLE_FUNC(handleStatus));
   ws()->on(URL_CHANGE, HTTP_GET,  HANDLE_FUNC(handleChangeGet));
   ws()->on(URL_CHANGE, HTTP_POST, HANDLE_FUNC(handleChangePost));
-  ws()->on(URL_SCAN_AND_CHANGE, HTTP_GET, HANDLE_FUNC(handleScanAndChangeGet));
+  ws()->on(URL_SCAN_AND_CHANGE, HTTP_GET, HANDLE_FUNC(handleScanAndChange));
+  ws()->on(URL_RECONNECT, HTTP_GET, HANDLE_FUNC(handleReconnect));
+  ws()->on(URL_DISCONNECT, HTTP_GET, HANDLE_FUNC(handleDisconnect));
 }
 
 String WiFiAppNetworkConfiguratorView::renderWiFiOptions()
@@ -40,6 +45,8 @@ String WiFiAppNetworkConfiguratorView::renderWiFiOptions()
 
 String WiFiAppNetworkConfiguratorView::renderChangeView()
 {
+  WiFiStationConfiguration config(true);
+  
   String wifiOptions = renderWiFiOptions();
   
   return String() +
@@ -47,7 +54,7 @@ String WiFiAppNetworkConfiguratorView::renderChangeView()
      "<head><title>Network Configuration - Chnage SSID</title></head>" +
      "<body>" +
       "<form method='POST'>" +
-       "SSID: <select name='ssid'>" + wifiOptions + "</select> (Current: " + WiFi.SSID() + ")<br>" +
+       "SSID: <select name='ssid'>" + wifiOptions + "</select> (Current: " + config.ssid() + ")<br>" +
        "Password: <input type='password' name='password'><br>" +
        "<input type='submit'>" +
       "</form>" +
@@ -57,6 +64,8 @@ String WiFiAppNetworkConfiguratorView::renderChangeView()
 
 String WiFiAppNetworkConfiguratorView::renderStatusView()
 {
+  WiFiStationConfiguration config(true);
+  
   return String() +
     "<html>" +
      "<head><title>Network Configuration - Status</title></head>" +
@@ -68,7 +77,11 @@ String WiFiAppNetworkConfiguratorView::renderStatusView()
       "WiFi Station Information" +
       "<ul>" +
        "<li>Status: " + WiFiStatusUtil::toString(WiFi.status()) +
-       "<li>SSID: " + WiFi.SSID() + " <a href='" + URL_SCAN_AND_CHANGE + "'>Change</a>" +
+        (m_configurator->isConnecting() ?
+         " <a href='" URL_DISCONNECT "'>Disconnect</a>" :
+         " <a href='" URL_RECONNECT "'>Reconnect</a>") +
+       "<li>SSID: " + config.ssid() +
+        " <a href='" + URL_SCAN_AND_CHANGE + "'>Change</a>" +
        "<li>IP address: " + IPAddressUtil::toString(WiFi.localIP()) +
        "<li>Subnet mask: " + IPAddressUtil::toString(WiFi.subnetMask()) +
        "<li>Default gateway: " + IPAddressUtil::toString(WiFi.gatewayIP()) +
@@ -92,14 +105,27 @@ String WiFiAppNetworkConfiguratorView::renderScanAndChangeView()
         "<meta http-equiv='refresh' content='3;url=" + URL_CHANGE + "'/>" +
       "</head>" +
       "<body>" +
-        "Scanning the network..." +
+        "Scanning for the networks..." +
       "</body>" +
     "</html>";
 }
 
-void WiFiAppNetworkConfiguratorView::handleStatusGet()
+String WiFiAppNetworkConfiguratorView::renderWaitForStatusView()
 {
-  if (WiFi.status() != WL_CONNECTED) {
+  return String() +
+    "<html>" +
+      "<head>" +
+        "<meta http-equiv='refresh' content='5;url=" + URL_STATUS + "'/>" +
+      "</head>" +
+      "<body>" +
+        "Waiting for refreshing the network..." +
+      "</body>" +
+    "</html>";
+}
+
+void WiFiAppNetworkConfiguratorView::handleStatus()
+{
+  if (WiFi.status() != WL_CONNECTED && m_configurator->isConnecting()) {
     ws()->sendHeader("Refresh", "5");
   }
   
@@ -118,17 +144,34 @@ void WiFiAppNetworkConfiguratorView::handleChangePost()
   payload.password = ws()->arg("password");
   
   ErrorInfo ex;
-  m_configurator->switchWiFi(payload, ex);
+  m_configurator->validateSwitchWiFiPayload(payload, ex);
+  
   if (!ex) {
-    ws()->sendHeader("Location", URL_STATUS);
-    ws()->send(302);
+    ws()->send(200, "text/html", renderWaitForStatusView());
+    delay(100);
+    m_configurator->switchWiFi(payload, ex);
   } else {
     ws()->send(400, "text/plain", ex.message());
   }
 }
 
-void WiFiAppNetworkConfiguratorView::handleScanAndChangeGet()
+void WiFiAppNetworkConfiguratorView::handleScanAndChange()
 {
   ws()->send(200, "text/html", renderScanAndChangeView());
+  delay(100);
   m_configurator->scanAccessPoints();
+}
+
+void WiFiAppNetworkConfiguratorView::handleReconnect()
+{
+  ws()->send(200, "text/html", renderWaitForStatusView());
+  delay(100);
+  m_configurator->reconnect();
+}
+
+void WiFiAppNetworkConfiguratorView::handleDisconnect()
+{
+  ws()->send(200, "text/html", renderWaitForStatusView());
+  delay(100);
+  m_configurator->disconnect();
 }
