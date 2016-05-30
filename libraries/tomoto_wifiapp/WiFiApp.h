@@ -9,6 +9,7 @@
 #include <WiFiAppDeepSleepConfig.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <functional>
 
 namespace tomoto {
 
@@ -17,6 +18,7 @@ private:
   String m_appName;
   bool m_isAPEnabled;
   WiFiAppDeepSleepConfig m_deepSleepConfig;
+  std::function<void(unsigned long)> m_waitForNetworkCallback;
   
   String m_hostName;
   WiFiAppAccessPoint m_accessPoint;
@@ -31,6 +33,7 @@ public:
           bool isAPEnabledByDefault = false);
   
   ESP8266WebServer* ws() { return &m_webServer; }
+  bool isAPEnabled() const { return m_isAPEnabled; }
   
   void init();
   void begin(const char* hostName, const char* apSSID, const char* apPassword, const IPAddress& apIP);
@@ -39,6 +42,7 @@ public:
   
   bool waitForNetwork(unsigned long timeoutMillis);
   void waitForNetworkOrDeepSleep(unsigned long timeoutMillis, unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc);
+  void setWaitForNetworkCallback(std::function<void(unsigned long)> f) { m_waitForNetworkCallback = f; }
 
 private:
   void waitForEnableAccessPoint();

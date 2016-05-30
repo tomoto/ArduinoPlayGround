@@ -14,8 +14,11 @@ const int COMM_SPEED = 9600;
 
 using namespace tomoto;
 
+static void defaultWaitForNetworkCallback(unsigned long elapsedTime) {}
+
 WiFiApp::WiFiApp(const char* appName, const WiFiAppDeepSleepConfig& deepSleepConfig, bool isAPEnabled) :
-  m_appName(appName), m_isAPEnabled(isAPEnabled), m_deepSleepConfig(deepSleepConfig)
+  m_appName(appName), m_isAPEnabled(isAPEnabled), m_deepSleepConfig(deepSleepConfig),
+  m_waitForNetworkCallback(defaultWaitForNetworkCallback)
 {
 }
 
@@ -60,13 +63,15 @@ bool WiFiApp::waitForNetwork(unsigned long timeoutMillis)
   if (m_isAPEnabled) return true;
   
   unsigned long startTime = millis();
-  while (millis() - startTime < timeoutMillis) {
+  unsigned long elapsedTime;
+  while ((elapsedTime = millis() - startTime) < timeoutMillis) {
     if (m_station.isConnected()) return true;
     Serial.print("WiFi waiting for network. Status=");
     Serial.print(WiFiStatusUtil::toString(WiFi.status()));
-    Serial.print(", time=");
-    Serial.println(millis() - startTime);
+    Serial.print(", elapsedTime=");
+    Serial.println(elapsedTime);
     delay(500);
+    m_waitForNetworkCallback(elapsedTime);
   }
   
   return false;
@@ -75,7 +80,7 @@ bool WiFiApp::waitForNetwork(unsigned long timeoutMillis)
 void WiFiApp::waitForNetworkOrDeepSleep(unsigned long timeoutMillis, unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc)
 {
   if (!waitForNetwork(timeoutMillis)) {
-    Serial.println("Going into sleep...");
+    Serial.printf("Going into sleep for %ld milliseconds...\n", deepSleepMillis);
     if (shutdownFunc != NULL) shutdownFunc();
     ESP.deepSleep(deepSleepMillis * 1000);
     delay(500); // to ensure going into deep sleep
@@ -88,6 +93,18 @@ void WiFiApp::waitForEnableAccessPoint()
   while (!m_isAPEnabled && millis() - startTime < STARTUP_TIMEOUT_MILLIS) {
     m_isAPEnabled |= !digitalRead(STARTUP_MODE_PIN);
   }
+}
+
+void WiFiApp::handleRootDefault()
+{
+  ws()->send(200, "text/html", "hello, world.");
+}
+
+void WiFiApp::beginWS()
+{
+  ws()->on("/", std::bind(&WiFiApp::handleRootDefault, this));
+  ws()->begin();
+  Serial.println("Web server started.");
 }
 
 void WiFiApp::loop()
@@ -104,16 +121,4 @@ void WiFiApp::loop()
   m_station.loop();
   
   ws()->handleClient();
-}
-
-void WiFiApp::handleRootDefault()
-{
-  ws()->send(200, "text/html", "hello, world.");
-}
-
-void WiFiApp::beginWS()
-{
-  ws()->on("/", std::bind(&WiFiApp::handleRootDefault, this));
-  ws()->begin();
-  Serial.println("Web server started.");
 }

@@ -23,8 +23,8 @@ public:
     clear();
   }
   
-  size_t size() { return m_size; }
-  size_t capacity() { return m_capacity; }
+  size_t size() const { return m_size; }
+  size_t capacity() const { return m_capacity; }
   
   operator T*() { return m_buf; }
   operator const T*() const { return m_buf; }
@@ -50,6 +50,14 @@ public:
       delete [] m_buf;
       m_buf = NULL;
       m_size = m_capacity = 0;
+    }
+  }
+  
+  void copyFrom(const TinyVector& other)
+  {
+    resize(other.size());
+    for (size_t i = 0; i < size(); i++) {
+      m_buf[i] = other[i];
     }
   }
 
