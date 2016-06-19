@@ -80,11 +80,21 @@ bool WiFiApp::waitForNetwork(unsigned long timeoutMillis)
 void WiFiApp::waitForNetworkOrDeepSleep(unsigned long timeoutMillis, unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc)
 {
   if (!waitForNetwork(timeoutMillis)) {
-    Serial.printf("Going into sleep for %ld milliseconds...\n", deepSleepMillis);
-    if (shutdownFunc != NULL) shutdownFunc();
-    ESP.deepSleep(deepSleepMillis * 1000);
-    delay(500); // to ensure going into deep sleep
+    goToDeepSleep(deepSleepMillis, shutdownFunc);
   }
+}
+
+void WiFiApp::goToDeepSleep()
+{
+  goToDeepSleep(m_deepSleepConfig.deepSleepMillis, m_deepSleepConfig.shutdownFunc);
+}
+
+void WiFiApp::goToDeepSleep(unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc)
+{
+  Serial.printf("Going into sleep for %ld milliseconds...\n", deepSleepMillis);
+  if (shutdownFunc != NULL) shutdownFunc();
+  ESP.deepSleep(deepSleepMillis * 1000);
+  delay(500); // to ensure going into deep sleep
 }
 
 void WiFiApp::waitForEnableAccessPoint()

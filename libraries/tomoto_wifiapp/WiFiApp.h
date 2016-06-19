@@ -42,6 +42,8 @@ public:
   
   bool waitForNetwork(unsigned long timeoutMillis);
   void waitForNetworkOrDeepSleep(unsigned long timeoutMillis, unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc);
+  void goToDeepSleep();
+  void goToDeepSleep(unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc);
   void setWaitForNetworkCallback(std::function<void(unsigned long)> f) { m_waitForNetworkCallback = f; }
 
 private:

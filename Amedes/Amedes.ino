@@ -6,6 +6,15 @@
 
 using namespace tomoto;
 
+#define USE_EXTERNAL_WAKE_UP
+
+#ifdef USE_EXTERNAL_WAKE_UP
+#define DEEP_SLEEP_MILLIS 0
+#define SELF_SHUTDOWN_MILLIS (5 * 60 * 1000L)
+#else
+#define DEEP_SLEEP_MILLIS (30 * 60 * 1000L)
+#endif
+
 #define SHORT_FORECAST_URI "http://www.jma.go.jp/jp/yoho/%s.html"
 #define WEEKLY_FORECAST_URI "http://www.jma.go.jp/jp/week/%s.html"
 
@@ -16,6 +25,7 @@ const int SHOW_FORECAST_SWITCH_PIN = 0;
 const int SHOW_FORECAST_SWITCH_ON = LOW;
 const int SHOW_FORECAST_SENSOR_PIN = 14;
 const int SHOW_FORECAST_SENSOR_ON = HIGH;
+const int POWER_MAINTENANCE_PIN = 4;
 
 const long FORECAST_EXPIRATION_MILLIS = 15 * 60 * 1000L;
 const unsigned long FORECAST_EXPIRED = -FORECAST_EXPIRATION_MILLIS;
@@ -27,7 +37,7 @@ void shutdown()
   clearDisplay();
 }
 
-WiFiApp app("Amedes", WiFiAppDeepSleepConfig(40*1000L, 120*1000L, 30*60*1000L, shutdown));
+WiFiApp app("Amedes", WiFiAppDeepSleepConfig(40*1000L, 120*1000L, DEEP_SLEEP_MILLIS, shutdown));
 
 TinyVector<int> shortForecast;
 TinyVector<int> weeklyForecast;
@@ -155,6 +165,9 @@ void displayNetworkConnecting(unsigned long elapsedTime)
 }
 
 void setup() {
+  pinMode(POWER_MAINTENANCE_PIN, OUTPUT);
+  digitalWrite(POWER_MAINTENANCE_PIN, HIGH);
+  
   app.init();
   initDisplay();
 
@@ -191,6 +204,12 @@ void normalModeLoop()
     displayForecastTriggered = false;
     displayForecast(shortForecast, weeklyForecast, [](){ app.loop(); });
   }
+
+#ifdef USE_EXTERNAL_WAKE_UP
+  if (millis() - lastRefreshMillis > SELF_SHUTDOWN_MILLIS) {
+    app.goToDeepSleep();
+  }
+#endif
 }
 
 void testModeLoop()
@@ -209,6 +228,4 @@ void loop() {
   
   delay(100);
 }
-
-
 
