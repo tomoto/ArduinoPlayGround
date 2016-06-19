@@ -86,6 +86,7 @@ void handleTestModeOn()
 void handleTestModeOff()
 {
   testMode = false;
+  displayForecastTriggered = false;
   handleTestMode();
 }
 
