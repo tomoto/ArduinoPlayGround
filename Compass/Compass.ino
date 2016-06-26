@@ -18,8 +18,8 @@ float angle;
 
 void setupCompass()
 {  
-  compass.SetScale(0.88);
-  compass.SetMeasurementMode(Measurement_Continuous);
+  compass.setGain(HMC5883L_GAIN_1370);
+  compass.setMode(HMC5883L_MODE_CONTINUOUS);
 }
 
 void setupMpu()
@@ -35,12 +35,12 @@ void setupMpu()
 
 void readCompass()
 { 
-  MagnetometerRaw raw = compass.ReadRawAxis();
-  int16_t mxRaw = raw.XAxis - MAG_X_OFFSET;
-  int16_t myRaw = raw.YAxis - MAG_Y_OFFSET;
-  int16_t mzRaw = raw.ZAxis - MAG_Z_OFFSET;
+  int16_t mxRaw = compass.getHeadingX() - MAG_X_OFFSET;
+  int16_t myRaw = compass.getHeadingY() - MAG_Y_OFFSET;
+  int16_t mzRaw = compass.getHeadingZ() - MAG_Z_OFFSET;
 
   if (abs(mxRaw) < 1000 && abs(myRaw) < 1000 && abs(mzRaw) < 1000) {
+    // Tweak the axes to match MPU
     mx = myRaw;
     my = -mxRaw;
     mz = mzRaw;
