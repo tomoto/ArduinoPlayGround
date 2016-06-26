@@ -3,7 +3,7 @@
 #ifndef WINSResponder_h
 #define WINSResponder_h
 
-#include <UDP.h>
+#include <Udp.h>
 #include <WINSMessage.h>
 #include <TinyVector.h>
 

@@ -9,43 +9,38 @@ using namespace tomoto;
 static WiFiUDP s_winsUDP;
 static WINSResponder s_winsResponder(&s_winsUDP);
 
-static void s_handleWiFiEvent(WiFiEvent_t event)
+static void onStationModeConnected(const WiFiEventStationModeConnected& event)
 {
-  static WiFiEvent_t ls_lastEvent = WIFI_EVENT_MAX;
-  
-  if (ls_lastEvent == event) return;
-  
-  ls_lastEvent = event;
-  
-  switch (event) {
-  case WIFI_EVENT_STAMODE_CONNECTED:
-    Serial.print("WiFi Connected. SSID=");
-    Serial.println(WiFi.SSID());
-    break;
-    
-  case WIFI_EVENT_STAMODE_GOT_IP:
-    Serial.print("WiFi Got IP. localIP=");
-    Serial.print(WiFi.localIP());
-    Serial.print(", hostName=");
-    Serial.println(WiFi.hostname());
-    
-    s_winsResponder.begin(WiFi.hostname().c_str(), WiFi.localIP());
-    MDNS.begin(WiFi.hostname().c_str(), WiFi.localIP());
-    Serial.println("WINS and mDNS responder started.");
-    break;
-    
-  case WIFI_EVENT_STAMODE_DHCP_TIMEOUT:
-    Serial.println("WiFi DHCP timed out.");
-    break;
-    
-  case WIFI_EVENT_STAMODE_DISCONNECTED:
-    Serial.println("WiFi Disconnected.");
-    break;
-  default:
-    // just ignore
-    break;
-  }
+  Serial.print("WiFi Connected. SSID=");
+  Serial.println(event.ssid);
 }
+
+static void onStationModeDisconnected(const WiFiEventStationModeDisconnected& event)
+{
+  Serial.print("WiFi Disconnected. Reason code=");
+  Serial.println(event.reason);
+}
+
+static void onStationModeGotIP(const WiFiEventStationModeGotIP& event)
+{
+  Serial.print("WiFi Got IP. localIP=");
+  Serial.print(event.ip);
+  Serial.print(", hostName=");
+  Serial.println(WiFi.hostname());
+
+  s_winsResponder.begin(WiFi.hostname().c_str(), event.ip);
+  MDNS.begin(WiFi.hostname().c_str(), event.ip);
+  Serial.println("WINS and mDNS responder started.");
+}
+
+static void onStationModeDHCPTimeout()
+{
+  Serial.println("WiFi DHCP timed out.");
+}
+
+static WiFiEventHandler onStationModeConnectedHandler;
+static WiFiEventHandler onStationModeDisconnectedHandler;
+static WiFiEventHandler onStationModeGotIPHandler;
 
 bool WiFiAppStation::isConnected()
 {
@@ -55,11 +50,14 @@ bool WiFiAppStation::isConnected()
 void WiFiAppStation::begin(const char* hostName)
 {
   WiFi.enableSTA(true);
-  WiFi.removeEvent(s_handleWiFiEvent);
-  WiFi.onEvent(s_handleWiFiEvent);
+  onStationModeConnectedHandler = WiFi.onStationModeConnected(onStationModeConnected);
+  onStationModeDisconnectedHandler = WiFi.onStationModeDisconnected(onStationModeDisconnected);
+  onStationModeGotIPHandler = WiFi.onStationModeGotIP(onStationModeGotIP);
+  // WiFi.onStationModeDHCPTimeout(onStationModeDHCPTimeout); // to workaround library bug
+  
   WiFi.hostname(hostName);
   WiFi.begin();
-  
+
   Serial.print("WiFi Connecting. SSID=");
   Serial.println(WiFi.SSID());
 }
