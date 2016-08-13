@@ -1,103 +1,69 @@
+#include "SignalOutput.h"
+#include "SignalState.h"
+#include <UtilityFunctions.h>
+#include <FixedArray.h>
 #include <ArduinoJson.h>
 
-const int NUMBER_OF_SIGNALS = 4;
+using namespace tomoto;
 
-enum SignalMode
-{
-  OFF,
-  ON,
-  BLINK
-};
-
-class SignalState
-{
-private:
-  int m_pin;
-  String m_name;
-  SignalMode m_mode;
-  
-public:
-  SignalState(int pin, const char* name) :
-    m_pin(pin), m_name(name), m_mode(SignalMode::OFF) {}
-  
-  int pin() const { return m_pin; }
-  
-  const char* name() const { return m_name.c_str(); }
-  
-  SignalMode mode() const { return m_mode; }
-  void mode(SignalMode m) { m_mode = m; }
-  
-  void init() const {
-    pinMode(m_pin, OUTPUT);
-  }
-  
-  int output() const {
-    switch (m_mode) {
-    case SignalMode::OFF:
-      digitalWrite(m_pin, LOW);
-      return 0;
-    case SignalMode::ON:
-      digitalWrite(m_pin, HIGH);
-      return 0;
-    case SignalMode::BLINK:
-      int phase = millis() % 4000L;
-      if (phase < 2000) {
-        digitalWrite(m_pin, HIGH);
-        return 0;
-      } else if (phase < 3023) {
-      	analogWrite(m_pin, (3023-phase)>>2);
-      	return 10;
-      } else {
-        digitalWrite(m_pin, LOW);
-        return 0;
-      }
-    }
-  }
-};
-
-SignalState states[4] = {
+SignalState signalStatesContents[] = {
   SignalState(5, "blue"),
   SignalState(6, "green"),
   SignalState(9, "yellow"),
   SignalState(10, "red")
 };
 
+FixedArray<SignalState> signalStates(signalStatesContents, 4);
+
 void setup() {
   Serial.begin(9600);
   
-  for (int i = 0; i < NUMBER_OF_SIGNALS; i++) {
-    states[i].init();
+  for (SignalState* s = signalStates.begin(); s != signalStates.end(); s++) {
+    s->init();
   }
+  
+  Serial.println("Serial port ready.");
 }
 
 void processJson(const String& json) {
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& root = jsonBuffer.parseObject(json.c_str());
   
-  for (int i = 0; i < NUMBER_OF_SIGNALS; i++) {
-    SignalState& s = states[i];
-    const char* mode = root.containsKey(s.name()) ? root[s.name()] : root["all"];
+  if (!root.success()) {
+    Serial.print("Message parsing error: ");
+    Serial.println(json);
+    return;
+  }
+  
+  for (SignalState* s = signalStates.begin(); s != signalStates.end(); s++) {
+    const char* mode = root.containsKey(s->name()) ? root[s->name()] : root["all"];
     if (mode) {
-      if (strcmp(mode, "off") == 0) s.mode(SignalMode::OFF);
-      if (strcmp(mode, "on") == 0) s.mode(SignalMode::ON);
-      if (strcmp(mode, "blink") == 0) s.mode(SignalMode::BLINK);
+      
+      Serial.print(s->name());
+      Serial.print(" set to ");
+      Serial.println(mode);
+      
+      for (const ISignalOutput* const* o = supportedSignalOutputs.begin(); o != supportedSignalOutputs.end(); o++) {
+        if (strcmp(mode, (*o)->name()) == 0) {
+          s->signalOutput(*o);
+          break;
+        }
+      }
     }
   }
 }
 
 void loop() {
   while (Serial.available()) {
+    delay(10);
     String json = Serial.readStringUntil('\n');
     processJson(json);
   }
   
-  int minResolution = 100;
-  for (int i = 0; i < NUMBER_OF_SIGNALS; i++) {
-    int resolution = states[i].output();
-    if (resolution > 0 && resolution < minResolution) {
-      minResolution = resolution;
-    }
+  ISignalOutput::resolution_t resolution = 100;
+  for (SignalState* s = signalStates.begin(); s != signalStates.end(); s++) {
+    resolution = min(s->output(), resolution);
   }
   
-  delay(minResolution);
+  delay(resolution);
 }
