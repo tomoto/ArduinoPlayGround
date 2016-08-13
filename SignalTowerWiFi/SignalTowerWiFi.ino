@@ -67,12 +67,13 @@ void processStates() {
 
 void setup() {
   app.init();
-  app.begin("signaltower", "SignalTowerWiFi", "signal108", IPAddress(192, 168, 108, 1));
   
   for (SignalState* s = signalStates.begin(); s != signalStates.end(); s++) {
     s->init();
   }
   analogWriteFreq(4000);
+  
+  app.begin("signaltower", "SignalTowerWiFi", "signal108", IPAddress(192, 168, 108, 1));
   
   app.ws()->on("/states", processStates);
   app.beginWS();
