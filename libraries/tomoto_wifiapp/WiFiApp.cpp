@@ -22,6 +22,10 @@ WiFiApp::WiFiApp(const char* appName, const WiFiAppDeepSleepConfig& deepSleepCon
 {
 }
 
+WiFiApp::~WiFiApp()
+{
+}
+
 void WiFiApp::init()
 {
   pinMode(STARTUP_MODE_PIN, INPUT);
@@ -55,7 +59,7 @@ void WiFiApp::begin(const char* hostName, const char* apSSID, const char* apPass
     m_deepSleepConfig.deepSleepMillis,
     m_deepSleepConfig.shutdownFunc);
   
-  m_networkConfiguratorView.init(ws(), &m_networkConfigurator);
+  m_networkConfiguratorView.init(ws(), &m_networkConfigurator, mqttConfig());
 }
 
 bool WiFiApp::waitForNetwork(unsigned long timeoutMillis)
@@ -132,3 +136,8 @@ void WiFiApp::loop()
   
   ws()->handleClient();
 }
+
+MQTTConfig* WiFiApp::mqttConfig() {
+  return NULL;
+}
+

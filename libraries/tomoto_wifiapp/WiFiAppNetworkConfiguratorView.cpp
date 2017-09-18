@@ -6,6 +6,8 @@
 #include <IPAddressUtil.h>
 #include <WiFiStatusUtil.h>
 #include <WiFiStationConfiguration.h>
+#include <MQTTConfig.h>
+#include <HTMLUtil.h>
 
 #define URL_BASE "/config/network"
 #define URL_STATUS URL_BASE
@@ -13,14 +15,16 @@
 #define URL_SCAN_AND_CHANGE URL_BASE "/scanAndChange"
 #define URL_RECONNECT URL_BASE "/reconnect"
 #define URL_DISCONNECT URL_BASE "/disconnect"
+#define URL_MQTT URL_BASE "/mqtt"
 #define HANDLE_FUNC(F) std::bind(&WiFiAppNetworkConfiguratorView::F, this)
 
 using namespace tomoto;
 
-void WiFiAppNetworkConfiguratorView::init(ESP8266WebServer* webServer, WiFiAppNetworkConfigurator* configurator)
+void WiFiAppNetworkConfiguratorView::init(ESP8266WebServer* webServer, WiFiAppNetworkConfigurator* configurator, MQTTConfig* mqttConfig)
 {
   m_webServer = webServer;
   m_configurator = configurator;
+  m_mqttConfig = mqttConfig;
   
   ws()->on(URL_STATUS, HTTP_GET, HANDLE_FUNC(handleStatus));
   ws()->on(URL_CHANGE, HTTP_GET,  HANDLE_FUNC(handleChangeGet));
@@ -28,6 +32,10 @@ void WiFiAppNetworkConfiguratorView::init(ESP8266WebServer* webServer, WiFiAppNe
   ws()->on(URL_SCAN_AND_CHANGE, HTTP_GET, HANDLE_FUNC(handleScanAndChange));
   ws()->on(URL_RECONNECT, HTTP_GET, HANDLE_FUNC(handleReconnect));
   ws()->on(URL_DISCONNECT, HTTP_GET, HANDLE_FUNC(handleDisconnect));
+  
+  if (m_mqttConfig) {
+    ws()->on(URL_MQTT, HTTP_POST, HANDLE_FUNC(handleMqttPost));
+  }
 }
 
 String WiFiAppNetworkConfiguratorView::renderWiFiOptions()
@@ -66,7 +74,7 @@ String WiFiAppNetworkConfiguratorView::renderStatusView()
 {
   WiFiStationConfiguration config(true);
   
-  return String() +
+  String contents = String() +
     "<html>" +
      "<head><title>Network Configuration - Status</title></head>" +
      "<body>" +
@@ -92,9 +100,34 @@ String WiFiAppNetworkConfiguratorView::renderStatusView()
       "<ul>" +
        "<li>AP IP address: " + IPAddressUtil::toString(WiFi.softAPIP()) +
        "<li>AP MAC address: " + WiFi.softAPmacAddress() +
-      "</ul>" +
-     "</body>" +
+      "</ul>";
+  
+  if (m_mqttConfig) {
+    contents += String() +
+      "MQTT Configuration" +
+      "<form method='POST' action='" URL_MQTT "'>" +
+        m_mqttConfig->ex.message() + 
+        "<ul>" +
+         "<li>Enabled: <input type='checkbox' value='1' name='enabled' " + HTMLUtil::renderChecked(m_mqttConfig->enabled) + ">" +
+         "<li>Host: <input type='text' name='host' value='" + m_mqttConfig->host + "'>" +
+         "<li>Port: <input type='text' name='port' value='" + m_mqttConfig->port + "'>" +
+         "<li>Topic: <input type='text' name='topic' value='" + m_mqttConfig->topic + "'>" +
+         "<li>User: <input type='text' name='user' value='" + m_mqttConfig->user + "'>" +
+         "<li>Password: <input type='text' name='password' value='" + m_mqttConfig->password + "'>" +
+         "<li><input type='submit' value='Update MQTT Configuration (Reboot required)'>" +
+        "</ul>" +
+      "</form>" +
+      "MQTT Status Information" +
+      "<ul>" +
+        "<li>TODO</li>" +
+      "</ul>";
+  }
+     
+  contents += String() +
+      "</body>" +
     "</html>";
+  
+  return contents;
 }
 
 String WiFiAppNetworkConfiguratorView::renderScanAndChangeView()
@@ -174,4 +207,21 @@ void WiFiAppNetworkConfiguratorView::handleDisconnect()
   ws()->send(200, "text/html", renderWaitForStatusView());
   delay(100);
   m_configurator->disconnect();
+}
+
+void WiFiAppNetworkConfiguratorView::handleMqttPost()
+{
+  m_mqttConfig->enabled = ws()->arg("enabled").toInt();
+  m_mqttConfig->host = ws()->arg("host");
+  m_mqttConfig->port = ws()->arg("port").toInt();
+  m_mqttConfig->topic = ws()->arg("topic");
+  m_mqttConfig->user = ws()->arg("user");
+  m_mqttConfig->password = ws()->arg("password");
+  
+  if (m_mqttConfig->validate()) {
+    m_mqttConfig->save();
+  }
+  
+  ws()->sendHeader("Location", URL_STATUS, true);
+  ws()->send(302, "text/plain", "");
 }

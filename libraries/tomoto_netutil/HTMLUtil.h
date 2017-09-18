@@ -28,6 +28,11 @@ public:
     
     return result;
   }
+  
+  static const char* renderChecked(bool value)
+  {
+    return value ? "checked='checked'" : "";
+  }
 };
 
 }

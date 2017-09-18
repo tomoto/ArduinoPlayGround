@@ -9,8 +9,9 @@ private:
   String m_message;
   
 public:
-  ErrorInfo(const char* message = NULL) : m_message(message) {}
+  ErrorInfo(const char* message = "") : m_message(message) {}
   void add(const char* message) { addSeparator(); m_message += message; }
+  void clear() { m_message = ""; }
   
   const char* message() const { return m_message.c_str(); }
   

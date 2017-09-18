@@ -4,7 +4,7 @@
 #include <FixedArray.h>
 #include <ArduinoJson.h>
 
-#include <WiFiApp.h>
+#include <WiFiMQTTApp.h>
 
 using namespace tomoto;
 
@@ -31,7 +31,8 @@ struct RequestQueue {
   bool isEmpty() const { return head.runAt == 0; }
 } requestQueue;
 
-WiFiApp app("SignalTower");
+WiFiMQTTApp app("SignalTower");
+Adafruit_MQTT_Subscribe* mqttSubscribe;
 
 void processJson(const String& json)
 {
@@ -112,10 +113,22 @@ void setup() {
   app.ws()->on("/states", processStates);
   app.ws()->on("/queue", processQueue);
   app.beginWS();
+
+  if (app.mqttClient()) {
+    mqttSubscribe = app.subscribeDefaultTopic();
+    app.beginMQTT();
+  }
 }
 
 void loop() {
   app.loop();
+
+  if (app.mqttClient() && app.readSubscription()) {
+    String payload((const char*) mqttSubscribe->lastread);
+    Serial.print("MQTT subscription got: ");
+    Serial.println(payload);
+    processJson(payload);
+  }
 
   if (!requestQueue.isEmpty() && millis() > requestQueue.head.runAt) {
     processJson(requestQueue.head.json);

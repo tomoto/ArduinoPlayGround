@@ -13,6 +13,8 @@
 
 namespace tomoto {
 
+class MQTTConfig;
+
 class WiFiApp {
 private:
   String m_appName;
@@ -31,20 +33,23 @@ public:
   WiFiApp(const char* appName,
           const WiFiAppDeepSleepConfig &deepSleepConfig = WiFiAppDeepSleepConfig(),
           bool isAPEnabledByDefault = false);
+  virtual ~WiFiApp();
   
   ESP8266WebServer* ws() { return &m_webServer; }
   bool isAPEnabled() const { return m_isAPEnabled; }
   
-  void init();
+  virtual void init();
   void begin(const char* hostName, const char* apSSID, const char* apPassword, const IPAddress& apIP);
   void beginWS();
-  void loop();
+  virtual void loop();
   
   bool waitForNetwork(unsigned long timeoutMillis);
   void waitForNetworkOrDeepSleep(unsigned long timeoutMillis, unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc);
   void goToDeepSleep();
   void goToDeepSleep(unsigned long deepSleepMillis, std::function<void(void)> shutdownFunc);
   void setWaitForNetworkCallback(std::function<void(unsigned long)> f) { m_waitForNetworkCallback = f; }
+  
+  virtual MQTTConfig* mqttConfig();
 
 private:
   void waitForEnableAccessPoint();
