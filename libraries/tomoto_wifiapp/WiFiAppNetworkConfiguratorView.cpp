@@ -63,7 +63,8 @@ String WiFiAppNetworkConfiguratorView::renderChangeView()
      "<body>" +
       "<form method='POST'>" +
        "SSID: <select name='ssid'>" + wifiOptions + "</select> (Current: " + config.ssid() + ")<br>" +
-       "Password: <input type='password' name='password'><br>" +
+       // "Password: <input type='password' name='password'><br>" +
+       "Password: <input type='text' name='password'><br>" +
        "<input type='submit'>" +
       "</form>" +
      "</body>" +
