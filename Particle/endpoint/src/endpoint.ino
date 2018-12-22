@@ -1,9 +1,9 @@
 #include "instrument/Voltage.h"
 #include "instrument/BME280.h"
-#include "util/MeshUtil.h"
+#include "util/EventUtil.h"
 #include "util/JsonObject.h"
 
-String statusTopic = MeshUtil::eventName("status");
+SYSTEM_THREAD(ENABLED);
 
 Voltage battery = BatteryVoltage::create();
 Voltage brightness(A1, 1.0);
@@ -18,13 +18,15 @@ String statusJson() {
 }
 
 void setup() {
+  waitUntil(Mesh.ready);
+  
   battery.begin();
   brightness.begin();
   climate.begin();
 }
 
 void loop() {
-  MeshUtil::publish(statusTopic, statusJson());
+  EventUtil::publish("status", statusJson());
   
   delay(60000);
 }

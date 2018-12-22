@@ -10,10 +10,6 @@ public:
   
   // Create event name "mesh/{deviceID}/{suffix}"
   static String eventName(const char* body);
-  
-  static bool message(const char* message) {
-    publish(eventName("message"), message);
-  }
 };
 
 #endif
