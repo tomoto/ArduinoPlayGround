@@ -4,8 +4,12 @@
 
 bool EventUtil::publish(const char* eventNameBody, const char* data) {
 #if Wiring_WiFi // Argon
-  return CloudUtil::publish(String("gateway/") + eventNameBody, data);
+  char eventName[CloudUtil::EVENT_NAME_LEN+1];
+  sprintf(eventName, "gateway/%s", eventNameBody);
+  return CloudUtil::publish(eventName, data);
 #else // Xenon
-  return MeshUtil::publish(MeshUtil::eventName(eventNameBody), data);
+  char eventName[MeshUtil::EVENT_NAME_LEN+1];
+  MeshUtil::getEventName(eventName, eventNameBody);
+  return MeshUtil::publish(eventName, data);
 #endif
 }

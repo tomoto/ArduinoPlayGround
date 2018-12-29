@@ -5,11 +5,14 @@
 
 class MeshUtil {
 public:
+  static const int EVENT_NAME_LEN = 63;
+  static const int EVENT_DATA_LEN = 255;
+  
   // Publish event to mesh network w/ LED flash
   static bool publish(const char* event, const char* data = NULL);
   
-  // Create event name "mesh/{deviceID}/{suffix}"
-  static String eventName(const char* body);
+  // Create event name "mesh/{deviceID}/{body}"
+  static void getEventName(char* buf, const char* body);
 };
 
 #endif

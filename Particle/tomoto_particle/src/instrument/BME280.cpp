@@ -33,16 +33,15 @@ void BME280::begin(int address) {
   EventUtil::message("BME280 started at forced mode.");
 }
 
-String BME280::str() {
+const char* BME280::getJson() {
   if (m_active) {
-    char data[64];
     m_bme.takeForcedMeasurement();
-    sprintf(data, "{\"t\":\"%f\",\"h\":\"%f\",\"p\":\"%f\"}",
+    sprintf(m_buf, "{\"t\":\"%f\",\"h\":\"%f\",\"p\":\"%f\"}",
       m_bme.readTemperature(),
       m_bme.readHumidity(),
       m_bme.readPressure());
-    return String(data);
+    return m_buf;
   } else {
-    return String("null");
+    return "null";
   }
 }

@@ -7,12 +7,13 @@ class Voltage {
 private:
   int m_pin;
   double m_multiplier;
+  char m_buf[10];
   
 public:
-  Voltage(int pin, double multiplier);
+  Voltage(int pin, double multiplier = 1.0);
   void begin();
   double getVoltage() const;
-  String str() const;
+  const char* getJson();
 };
 
 

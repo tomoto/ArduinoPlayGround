@@ -5,28 +5,31 @@
 
 SYSTEM_THREAD(ENABLED);
 
-Voltage battery = BatteryVoltage::create();
-Voltage brightness(A1, 1.0);
+Voltage batt = BatteryVoltage::create();
+Voltage light(A1, 1.0);
 BME280 climate;
 
-String statusJson() {
-  return JsonObject().
-    a("battery", battery.str()).
-    a("brightness", brightness.str()).
-    a("climate", climate.str()).
-    str();
+JsonObject<EventUtil::EVENT_DATA_LEN> statusJson;
+
+static void updateStatusJson() {
+  statusJson.
+    clear().
+    a("batt", batt.getJson()).
+    a("light", light.getJson()).
+    a("climate", climate.getJson());
 }
 
 void setup() {
   waitUntil(Mesh.ready);
   
-  battery.begin();
-  brightness.begin();
+  batt.begin();
+  light.begin();
   climate.begin();
 }
 
 void loop() {
-  EventUtil::publish("status", statusJson());
+  updateStatusJson();
+  EventUtil::publish("status", statusJson.c_str());
   
   delay(60000);
 }

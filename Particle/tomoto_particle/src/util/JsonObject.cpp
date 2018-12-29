@@ -1,21 +1,20 @@
 #include "JsonObject.h"
 
-JsonObject::JsonObject() {
+JsonObjectBase::JsonObjectBase(char* begin, int capacity) : m_begin(begin), m_capacity(capacity) {
+  clear();
 }
 
-JsonObject& JsonObject::a(const char* name, const char* value) {
-  m_buf = m_buf + (m_buf.length() == 0 ? "{" : ",") + "\"" + name + "\":" + value;
+JsonObjectBase& JsonObjectBase::clear() {
+  strncpy(m_begin, "{}", m_capacity);
   return *this;
 }
 
-JsonObject& JsonObject::a(const char* name, const String& value) {
-  return a(name, value.c_str());
+JsonObjectBase& JsonObjectBase::a(const char* name, const char* value) {
+  char* p = m_begin + strlen(m_begin) - 1;
+  bool isFirst = (p == m_begin + 1);
+  
+  sprintf(p, "%s\"%s\":%s}", (isFirst ? "" : ","), name, value); // TODO: check overrun
+  
+  return *this;
 }
 
-String JsonObject::str() {
-  return m_buf + "}";
-}
-
-const char* JsonObject::c_str() {
-  return str().c_str();
-}

@@ -14,10 +14,9 @@ double Voltage::getVoltage() const {
   return analogRead(m_pin) / 4095.0 * 3.3 * m_multiplier;
 }
 
-String Voltage::str() const {
-  char buf[16];
-  sprintf(buf, "{\"v\":%f}", getVoltage());
-  return String(buf);
+const char* Voltage::getJson() {
+  sprintf(m_buf, "\"%f\"", getVoltage());
+  return m_buf;
 }
 
 Voltage BatteryVoltage::create() {

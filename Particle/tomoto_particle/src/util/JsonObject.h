@@ -3,16 +3,31 @@
 
 #include "application.h"
 
-class JsonObject {
+class JsonObjectBase {
 private:
-  String m_buf;
+  char* const m_begin;
+  const int m_capacity;
 
+protected:
+  JsonObjectBase(char* begin, int capacity);
+  
 public:
-  JsonObject();
-  JsonObject& a(const char* name, const char* value);
-  JsonObject& a(const char* name, const String& value);
-  String str();
-  const char* c_str();
+  JsonObjectBase& clear();
+  JsonObjectBase& a(const char* name, const char* value);
+  
+  const char* c_str() const { return m_begin; }
+
+private:
+  JsonObjectBase(const JsonObjectBase&); // forbidden
+};
+
+template<int L>
+class JsonObject : public JsonObjectBase {
+private:
+  char m_buf[L+1];
+  
+public:
+  JsonObject() : JsonObjectBase(m_buf, L+1) {}
 };
 
 #endif

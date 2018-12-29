@@ -8,11 +8,12 @@ class BME280 {
 private:
   Adafruit_BME280 m_bme;
   bool m_active;
+  char m_buf[64];
   
 public:
   BME280();
   void begin(int address = 0x76);
-  String str();
+  const char* getJson();
 };
 
 #endif
