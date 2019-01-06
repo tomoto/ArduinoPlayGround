@@ -4,8 +4,13 @@
 #include "instrument/BME280.h"
 #include "util/EventUtil.h"
 #include "util/JsonObject.h"
+#include "util/ExternalAntenna.h"
+
+SYSTEM_THREAD(ENABLED);
 
 ApplicationWatchdog wd(60000 * 5, System.reset);
+
+ExternalAntenna ant(true); // specify if you use the external antenna or not
 
 MeshEventRepeater repeater;
 MeshRemoteResetSender remoteResetSender;
@@ -35,6 +40,10 @@ static int sendResetFunc(const char* deviceID) {
 }
 
 void setup() {
+  ant.begin();
+  waitUntil(Particle.connected);
+  ant.sendStatus();
+  
   Particle.function("resetSelf", resetSelfFunc);
   Particle.function("sendReset", sendResetFunc);
   

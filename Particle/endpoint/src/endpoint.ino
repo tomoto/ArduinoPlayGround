@@ -3,8 +3,11 @@
 #include "util/EventUtil.h"
 #include "util/JsonObject.h"
 #include "endpoint/MeshRemoteResetReceiver.h"
+#include "util/ExternalAntenna.h"
 
 SYSTEM_THREAD(ENABLED);
+
+ExternalAntenna ant(true); // specify if you use the external antenna or not
 
 MeshRemoteResetReceiver remoteResetReceiver;
 
@@ -23,7 +26,9 @@ static void updateStatusJson() {
 }
 
 void setup() {
+  ant.begin();
   waitUntil(Mesh.ready);
+  ant.sendStatus();
   
   remoteResetReceiver.begin();
   batt.begin();
