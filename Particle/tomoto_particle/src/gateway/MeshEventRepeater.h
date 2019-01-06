@@ -3,9 +3,7 @@
 
 class MeshEventRepeater {
 public:
-    MeshEventRepeater();
     void begin();
-    void process();
 };
 
 #endif

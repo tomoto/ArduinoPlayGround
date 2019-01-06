@@ -1,4 +1,5 @@
 #include "gateway/MeshEventRepeater.h"
+#include "gateway/MeshRemoteResetSender.h"
 #include "instrument/Voltage.h"
 #include "instrument/BME280.h"
 #include "util/EventUtil.h"
@@ -7,6 +8,8 @@
 ApplicationWatchdog wd(60000 * 5, System.reset);
 
 MeshEventRepeater repeater;
+MeshRemoteResetSender remoteResetSender;
+
 Voltage batt = BatteryVoltage::create();
 Voltage light(A1, 1.0);
 BME280 climate;
@@ -21,13 +24,19 @@ static void updateStatusJson() {
     a("climate", climate.getJson());
 }
 
-static int resetFunc(const char*) {
+static int resetSelfFunc(const char*) {
   System.reset();
-  return true;
+  return 0;
+}
+
+static int sendResetFunc(const char* deviceID) {
+  remoteResetSender.send(deviceID);
+  return 0;
 }
 
 void setup() {
-  Particle.function("reset", resetFunc);
+  Particle.function("resetSelf", resetSelfFunc);
+  Particle.function("sendReset", sendResetFunc);
   
   repeater.begin();
   batt.begin();
@@ -36,8 +45,6 @@ void setup() {
 }
 
 void loop() {
-  repeater.process();
-  
   updateStatusJson();
   EventUtil::publish("status", statusJson.c_str());
   

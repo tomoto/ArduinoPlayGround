@@ -2,8 +2,11 @@
 #include "instrument/BME280.h"
 #include "util/EventUtil.h"
 #include "util/JsonObject.h"
+#include "endpoint/MeshRemoteResetReceiver.h"
 
 SYSTEM_THREAD(ENABLED);
+
+MeshRemoteResetReceiver remoteResetReceiver;
 
 Voltage batt = BatteryVoltage::create();
 Voltage light(A1, 1.0);
@@ -22,6 +25,7 @@ static void updateStatusJson() {
 void setup() {
   waitUntil(Mesh.ready);
   
+  remoteResetReceiver.begin();
   batt.begin();
   light.begin();
   climate.begin();

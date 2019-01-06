@@ -11,8 +11,11 @@ public:
   // Publish event to mesh network w/ LED flash
   static bool publish(const char* event, const char* data = NULL);
   
-  // Create event name "mesh/{deviceID}/{body}"
+  // Create event name "mesh/{this deviceID}/{body}"
   static void getEventName(char* buf, const char* body);
+
+  // Create event name "mesh/{given deviceID}/{body}"
+  static void getEventName(char* buf, const char* deviceID, const char* body);
 };
 
 #endif
