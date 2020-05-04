@@ -20,6 +20,7 @@ public:
 class BatteryVoltage {
 public:
   static Voltage create();
+  static bool isPowerSupplied(double v) { return v >= 4.3; }
 };
 
 #endif

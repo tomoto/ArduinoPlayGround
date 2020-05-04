@@ -39,6 +39,14 @@ static int sendResetFunc(const char* deviceID) {
   return 0;
 }
 
+static int keepAwakeFunc(const char* keepAwake) {
+  if (strlen(keepAwake) > 0) {
+    repeater.setAck(atoi(keepAwake) ? "awake" : "sleep");
+  }
+  
+  return repeater.getAck() && strcmp(repeater.getAck(), "awake") == 0;
+}
+
 void setup() {
   ant.begin();
   waitUntil(Particle.connected);
@@ -46,7 +54,9 @@ void setup() {
   
   Particle.function("resetSelf", resetSelfFunc);
   Particle.function("sendReset", sendResetFunc);
+  Particle.function("keepAwake", keepAwakeFunc);
   
+  repeater.setAck("sleep");
   repeater.begin();
   batt.begin();
   light.begin();

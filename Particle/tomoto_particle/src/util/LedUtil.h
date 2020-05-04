@@ -3,11 +3,8 @@
 
 class LedUtil {
 public:
-    static void sendToCloudBegin();
-    static bool sendToCloudEnd(bool result);
-    
-    static void sendToMeshBegin();
-    static bool sendToMeshEnd(bool result);
+    static void setUserSignal(bool value);
+    static void setBrightness(int value);
 };
 
 #endif

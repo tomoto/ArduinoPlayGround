@@ -1,12 +1,17 @@
 #include "util/MeshUtil.h"
 #include "util/LedUtil.h"
+#include "util/SimpleTimeout.h"
 #include "Particle.h"
 
 static String thisDeviceID = System.deviceID(); // get only once
 
 bool MeshUtil::publish(const char* event, const char* data) {
-  LedUtil::sendToMeshBegin();
-  return LedUtil::sendToMeshEnd(Mesh.publish(event, data));
+  SimpleTimeout timeout(50);
+  LedUtil::setUserSignal(true);
+  Mesh.publish(event, data);
+  timeout.wait();
+  LedUtil::setUserSignal(false);
+  return true;
 }
 
 void MeshUtil::getEventName(char* buf, const char* body) {
